@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sync Ekadashi dates with your Google Calendar. Never miss an Ekadashi observance.">
+    <title>Ekadashi Calendar Sync</title>
+    <link rel="stylesheet" href="styles.css">
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌙 Ekadashi Calendar Sync</h1>
+            <p>Never miss an Ekadashi observance - automatically sync with your Google Calendar</p>
+        </header>
+
+        <div class="main-content">
+            <div class="sync-section">
+                <h2 style="color: #333; margin-bottom: 20px;">Connect Your Google Calendar</h2>
+                <button class="sync-button" id="syncButton">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path>
+                    </svg>
+                    Sync with Google Calendar
+                </button>
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">📅</div>
+                    <h3>Automatic Sync</h3>
+                    <p>All Ekadashi dates are automatically added to your calendar with customizable reminders</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔔</div>
+                    <h3>Smart Reminders</h3>
+                    <p>Get notified before each Ekadashi so you can prepare for your observance</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌍</div>
+                    <h3>Location-Based</h3>
+                    <p>Ekadashi dates calculated accurately based on your geographical location</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Customizable</h3>
+                    <p>Choose which Ekadashis to track and set your preferred reminder times</p>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h2>⚙️ Sync Settings</h2>
+                
+                <div class="setting-item">
+                    <label for="timezone">Your Location/Timezone:</label>
+                    <select id="timezone">
+                        <option value="Asia/Kolkata">India (IST)</option>
+                        <option value="America/New_York">USA - Eastern</option>
+                        <option value="America/Los_Angeles">USA - Pacific</option>
+                        <option value="Europe/London">UK (GMT/BST)</option>
+                        <option value="Australia/Sydney">Australia - Sydney</option>
+                        <option value="Asia/Dubai">UAE</option>
+                        <option value="Asia/Singapore">Singapore</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <label for="calendar">Tradition:</label>
+                    <select id="calendar">
+                        <option value="vaishnava">Vaishnava (ISKCON)</option>
+                        <option value="smarta">Smarta</option>
+                        <option value="both">Both</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <label>Include:</label>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="parana" checked>
+                        <label for="parana" style="margin: 0; font-weight: normal;">Parana (breaking fast) times</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="fasting" checked>
+                        <label for="fasting" style="margin: 0; font-weight: normal;">Fasting guidelines</label>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label for="reminder">Reminder Time (hours before):</label>
+                    <input type="number" id="reminder" value="24" min="1" max="168">
+                </div>
+            </div>
+
+            <div class="calendar-preview">
+                <h2>📆 Upcoming Ekadashi Dates (2026)</h2>
+                <ul class="ekadashi-list" id="ekadashiList">
+                    <li class="ekadashi-item">
+                        <div>
+                            <div class="ekadashi-date">Feb 13, 2026</div>
+                            <div class="ekadashi-name">Jaya Ekadashi</div>
+                        </div>
+                        <span class="ekadashi-type">Krishna Paksha</span>
+                    </li>
+                    <li class="ekadashi-item">
+                        <div>
+                            <div class="ekadashi-date">Feb 27, 2026</div>
+                            <div class="ekadashi-name">Vijaya Ekadashi</div>
+                        </div>
+                        <span class="ekadashi-type">Shukla Paksha</span>
+                    </li>
+                    <li class="ekadashi-item">
+                        <div>
+                            <div class="ekadashi-date">Mar 15, 2026</div>
+                            <div class="ekadashi-name">Amalaki Ekadashi</div>
+                        </div>
+                        <span class="ekadashi-type">Krishna Paksha</span>
+                    </li>
+                    <li class="ekadashi-item">
+                        <div>
+                            <div class="ekadashi-date">Mar 29, 2026</div>
+                            <div class="ekadashi-name">Papmochani Ekadashi</div>
+                        </div>
+                        <span class="ekadashi-type">Shukla Paksha</span>
+                    </li>
+                    <li class="ekadashi-item">
+                        <div>
+                            <div class="ekadashi-date">Apr 13, 2026</div>
+                            <div class="ekadashi-name">Kamada Ekadashi</div>
+                        </div>
+                        <span class="ekadashi-type">Krishna Paksha</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>🕉️ May your spiritual practice be blessed</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Ekadashi Calendar Sync • Connecting devotion with technology</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
