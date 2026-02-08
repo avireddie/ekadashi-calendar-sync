@@ -1,4 +1,4 @@
-# Ekadashi Calendar Sync 🌙
+# Ekadashi Calendar Sync 🕉️
 
 A beautiful web application to sync Ekadashi dates with your Google Calendar, helping devotees maintain their spiritual practices.
 

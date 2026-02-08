@@ -116,7 +116,7 @@ async function addEkadashiEvents() {
         }
         
         const event = {
-            summary: `🌙 ${ekadashi.name}`,
+            summary: `🕉️ ${ekadashi.name}`,
             description: description,
             start: {
                 date: ekadashi.date,
