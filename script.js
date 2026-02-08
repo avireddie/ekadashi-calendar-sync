@@ -1,5 +1,22 @@
-const syncButton = document.getElementById('syncButton');
-const statusMessage = document.getElementById('statusMessage');
+// Wait for DOM to be ready
+let syncButton, statusMessage;
+
+document.addEventListener('DOMContentLoaded', () => {
+    syncButton = document.getElementById('syncButton');
+    statusMessage = document.getElementById('statusMessage');
+    
+    if (!syncButton || !statusMessage) {
+        console.error('Required elements not found in DOM');
+        return;
+    }
+    
+    // Handle sync button click
+    if (syncButton) {
+        syncButton.addEventListener('click', handleAuthClick);
+    } else {
+        console.error('Sync button not found!');
+    }
+});
 
 // Google Calendar API configuration
 const CLIENT_ID = '543461783651-ntvpm6kdi1u8bpi1e83l81kc61gv5fgf.apps.googleusercontent.com';
@@ -37,59 +54,163 @@ const ekadashiDates2026 = [
     { date: '2026-12-20', name: 'Saphala Ekadashi', type: 'Shukla Paksha' }
 ];
 
-// Load Google API
+// Load Google API - must be in global scope
 function gapiLoaded() {
-    gapi.load('client', initializeGapiClient);
+    console.log('Google API script loaded');
+    if (typeof gapi !== 'undefined') {
+        gapi.load('client', initializeGapiClient);
+    } else {
+        console.error('gapi object not available');
+    }
 }
+window.gapiLoaded = gapiLoaded;
 
 async function initializeGapiClient() {
-    await gapi.client.init({
-        apiKey: API_KEY,
-        discoveryDocs: DISCOVERY_DOCS,
-    });
-    gapiInited = true;
-    maybeEnableButtons();
-}
-
-function gisLoaded() {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPES,
-        callback: '', // defined later
-    });
-    gisInited = true;
-    maybeEnableButtons();
-}
-
-function maybeEnableButtons() {
-    if (gapiInited && gisInited) {
-        syncButton.disabled = false;
+    try {
+        console.log('Initializing Google API client...');
+        await gapi.client.init({
+            apiKey: API_KEY,
+            discoveryDocs: DISCOVERY_DOCS,
+        });
+        gapiInited = true;
+        console.log('Google API client initialized');
+        maybeEnableButtons();
+    } catch (error) {
+        console.error('Error initializing Google API client:', error);
     }
 }
 
-// Handle sync button click
-syncButton.addEventListener('click', handleAuthClick);
+function gisLoaded() {
+    console.log('Google Identity Services script loaded');
+    try {
+        if (typeof google !== 'undefined' && google.accounts) {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // defined later
+            });
+            gisInited = true;
+            console.log('Google Identity Services initialized');
+            maybeEnableButtons();
+        } else {
+            console.error('Google Identity Services not available');
+        }
+    } catch (error) {
+        console.error('Error initializing Google Identity Services:', error);
+    }
+}
+window.gisLoaded = gisLoaded;
+
+function maybeEnableButtons() {
+    console.log(`API status - gapiInited: ${gapiInited}, gisInited: ${gisInited}`);
+    if (gapiInited && gisInited) {
+        // Make sure DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                if (syncButton) {
+                    syncButton.disabled = false;
+                    console.log('Sync button enabled');
+                }
+            });
+        } else {
+            if (syncButton) {
+                syncButton.disabled = false;
+                console.log('Sync button enabled');
+            } else {
+                console.error('Sync button not found when trying to enable');
+            }
+        }
+    } else {
+        console.log('APIs not ready yet, button remains disabled');
+    }
+}
 
 function handleAuthClick() {
+    console.log('Sync button clicked');
+    
+    // Check if APIs are loaded
+    if (!gapiInited || !gisInited) {
+        statusMessage.className = 'status-message error';
+        statusMessage.style.display = 'block';
+        statusMessage.textContent = '❌ Google APIs are still loading. Please wait a moment and try again.';
+        return;
+    }
+    
+    if (!tokenClient) {
+        statusMessage.className = 'status-message error';
+        statusMessage.style.display = 'block';
+        statusMessage.textContent = '❌ Authentication client not initialized. Please refresh the page.';
+        return;
+    }
+    
     tokenClient.callback = async (resp) => {
         if (resp.error !== undefined) {
+            console.error('Auth error:', resp.error);
             statusMessage.className = 'status-message error';
             statusMessage.style.display = 'block';
-            statusMessage.textContent = '❌ Authentication failed. Please try again.';
+            statusMessage.textContent = `❌ Authentication failed: ${resp.error}. Please try again.`;
             syncButton.disabled = false;
-            throw (resp);
+            return;
         }
         
+        console.log('Authentication successful, adding events...');
         syncButton.disabled = true;
         syncButton.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Syncing...';
         
-        await addEkadashiEvents();
+        try {
+            await addEkadashiEvents();
+        } catch (error) {
+            console.error('Error adding events:', error);
+            statusMessage.className = 'status-message error';
+            statusMessage.style.display = 'block';
+            statusMessage.textContent = '❌ Error syncing events. Please check the console for details.';
+            syncButton.disabled = false;
+        }
     };
 
-    if (gapi.client.getToken() === null) {
-        tokenClient.requestAccessToken({prompt: 'consent'});
-    } else {
-        tokenClient.requestAccessToken({prompt: ''});
+    try {
+        if (gapi.client.getToken() === null) {
+            console.log('Requesting access token with consent...');
+            tokenClient.requestAccessToken({prompt: 'consent'});
+        } else {
+            console.log('Requesting access token (already authenticated)...');
+            tokenClient.requestAccessToken({prompt: ''});
+        }
+    } catch (error) {
+        console.error('Error requesting token:', error);
+        statusMessage.className = 'status-message error';
+        statusMessage.style.display = 'block';
+        statusMessage.textContent = '❌ Error initiating authentication. Please check browser console.';
+    }
+}
+
+// Function to check if an event already exists
+async function eventExists(summary, date) {
+    try {
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+        
+        const response = await gapi.client.calendar.events.list({
+            calendarId: 'primary',
+            timeMin: startDate.toISOString(),
+            timeMax: endDate.toISOString(),
+            q: summary,
+            maxResults: 10,
+            singleEvents: true
+        });
+        
+        // Check if any event matches the exact summary and date
+        const events = response.result.items || [];
+        return events.some(event => {
+            const eventDate = event.start.date || event.start.dateTime;
+            return event.summary === summary && eventDate.startsWith(date);
+        });
+    } catch (error) {
+        console.error('Error checking for existing event:', error);
+        // If check fails, assume event doesn't exist to avoid blocking
+        return false;
     }
 }
 
@@ -102,9 +223,19 @@ async function addEkadashiEvents() {
     const includeFasting = document.getElementById('fasting').checked;
     
     let successCount = 0;
+    let skippedCount = 0;
     let errorCount = 0;
     
     for (const ekadashi of ekadashiDates2026) {
+        const eventSummary = `🕉️ ${ekadashi.name}`;
+        
+        // Check if event already exists
+        const exists = await eventExists(eventSummary, ekadashi.date);
+        if (exists) {
+            skippedCount++;
+            continue;
+        }
+        
         let description = `${ekadashi.name} (${ekadashi.type})`;
         
         if (includeFasting) {
@@ -116,7 +247,7 @@ async function addEkadashiEvents() {
         }
         
         const event = {
-            summary: `🕉️ ${ekadashi.name}`,
+            summary: eventSummary,
             description: description,
             start: {
                 date: ekadashi.date,
@@ -149,18 +280,24 @@ async function addEkadashiEvents() {
     }
     
     // Show success message
-    if (errorCount === 0) {
+    let message = '';
+    if (errorCount === 0 && skippedCount === 0) {
+        message = `✓ Successfully synced! ${successCount} Ekadashi dates have been added to your Google Calendar.`;
         statusMessage.className = 'status-message success';
-        statusMessage.style.display = 'block';
-        statusMessage.textContent = `✓ Successfully synced! ${successCount} Ekadashi dates have been added to your Google Calendar.`;
+        syncButton.innerHTML = '✓ Synced';
+    } else if (errorCount === 0) {
+        message = `✓ Sync complete! ${successCount} new events added, ${skippedCount} already existed (skipped).`;
+        statusMessage.className = 'status-message success';
         syncButton.innerHTML = '✓ Synced';
     } else {
+        message = `⚠️ Partially synced. ${successCount} events added, ${skippedCount} skipped, ${errorCount} failed.`;
         statusMessage.className = 'status-message error';
-        statusMessage.style.display = 'block';
-        statusMessage.textContent = `⚠️ Partially synced. ${successCount} events added, ${errorCount} failed.`;
         syncButton.innerHTML = 'Sync with Google Calendar';
         syncButton.disabled = false;
     }
+    
+    statusMessage.style.display = 'block';
+    statusMessage.textContent = message;
     
     // Re-enable button after 3 seconds
     setTimeout(() => {
